@@ -5,78 +5,50 @@ import getpass
 import re
 import argparse
 from prettytable import PrettyTable
+from pint import UnitRegistry
+ureg = UnitRegistry()
 
 # All string data passed to functions represented by x or d variables are split into arrays before being passed
 # This makes it easier to format
 
 
-def verbose_values(u, nz, d):   # This function prints the data for groups of users and each individual user
+def verbose_values(nz, d):   # This function prints the data for groups of users and each individual user
                                 # (u: the units either 'm' or 'h'; nz: a boolean that is true when skipping inactive users given by the <-n> argument; d: the data)
-    if (u == 'h'):    # Default
-        if (nz):  # <-n>
-            if d[4] != '0':
-                return([d[0], d[1], d[2], int(int(d[3]) / 60), int(int(d[4]) / 60), int(int(d[5]) / 60), int(int(d[6]) / 60), int(int(d[7]) / 60)])
-        else:  # Default
-            return([d[0], d[1], d[2], int(int(d[3]) / 60), int(int(d[4]) / 60), int(int(d[5]) / 60), int(int(d[6]) / 60), int(int(d[7]) / 60)])
-    else:      # <-m>
-        if (nz):  # <-n>
-            if d[4] != '0':
-                return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
-        else:  # Default
+    if (nz):  # <-n>
+        if d[4] != '0':
             return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
+    else:  # Default
+        return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
 
 
-def short_values(u, nz, d):  # This function prints the data values in a condensed manner
+def short_values(nz, d):  # This function prints the data values in a condensed manner
                                 # (u: the units either 'm' or 'h'; nz: a boolean for skipping inactive users <-n>; d: the data)
-    if (u == 'h'):    # Default
-        if (nz):  # <-n>
-            if d[4] != '0':
-                return([d[0], d[1], int(int(d[3]) / 60), int(int(d[4]) / 60)])
-        else:  # Default
-            return([d[0], d[1], int(int(d[3]) / 60), int(int(d[4]) / 60)])
-    else:  # <-m>
-        if(nz):  # <-n>
-            if d[4] != '0':
-                return([d[0], d[1], d[3], d[4]])
-        else:	  # Default
+    if (nz):  # <-n>
+        if d[4] != 0:
             return([d[0], d[1], d[3], d[4]])
+    else:  # Default
+        return([d[0], d[1], d[3], d[4]])
 
 
-def parse_values(u, nz, d):   # Prints data in an easily parsible format
+def parse_values(nz, d):   # Prints data in an easily parsible format
                                 # (created by the <-p> and <-v> arguments; u: units; nz: skipping inactive users; d: data)
-    if u == 'h':   # Default
-        if (nz):  # <-n>
-            if d[4] != '0':
-                print(d[0] + "," + d[1] + "," + d[2] + "," + str(int(int(d[3]) / 60)) + "," + str(int(int(d[4]) / 60)) + ","
-                                 + str(int(int(d[5]) / 60)) + "," + str(int(int(d[6]) / 60)) + "," + str(int(int(d[7]) / 60)))
-        else:   # Default
-            print(d[0] + "," + d[1] + "," + d[2] + "," + str(int(int(d[3]) / 60)) + "," + str(int(int(d[4]) / 60)) + ","
-                             + str(int(int(d[5]) / 60)) + "," + str(int(int(d[6]) / 60)) + "," + str(int(int(d[7]) / 60)))
-    else:  # <-m>
-        if (nz):  # <-n>
-            if d[4] != '0':
-                print(d[0] + "," + d[1] + "," + d[2] + "," + d[3] + "," + d[4] + "," + d[5] + "," + d[6] + "," + d[7])
-        else:  # Default
-            print(d[0] + "," + d[1] + "," + d[2] + "," + d[3] + "," + d[4] + "," + d[5] + "," + d[6] + "," + d[7])
+    if (nz):  # <-n>
+        if d[4] != '0':
+            print(d[0] + "," + d[1] + "," + d[2] + "," + str(d[3]) + "," + str(d[4]) + "," + str(d[5]) + "," + str(d[6]) + "," + str(d[7]))
+    else:  # Default
+        print(d[0] + "," + d[1] + "," + d[2] + "," + str(d[3]) + "," + str(d[4]) + "," + str(d[5]) + "," + str(d[6]) + "," + str(d[7]))
 
 
-def parse_valuesShort(u, nz, d):  # Prints the data in a shortend parsible format
+def parse_valuesShort(nz, d):  # Prints the data in a shortend parsible format
                                 # (created by the <-p> argument; u: units; nz: only active users; d: the data)
-    if u == 'h':  # Default
-        if (nz):  # <-n>
-            if d[4] != '0':
-                print(d[0] + ',' + d[1] + ',' + str(int(int(d[3]) / 60)) + ',' + str(int(int(d[4]) / 60)))
-        else:  # Default
-            print(d[0] + ',' + d[1] + ',' + str(int(int(d[3]) / 60)) + ',' + str(int(int(d[4]) / 60)))
-    else:  # <-m>
-        if (nz):  # <-n>
-            if d[4] != '0':
-                print(d[0] + ',' + d[1] + ',' + d[3] + ',' + d[4])
-        else:  # Default
-            print(d[0] + ',' + d[1] + ',' + d[3] + ',' + d[4])
+    if (nz):  # <-n>
+        if d[4] != 0:
+            print(d[0] + ',' + d[1] + ',' + str(d[3]) + ',' + str(d[4]))
+    else:  # Default
+        print(d[0] + ',' + d[1] + ',' + str(d[3]) + ',' + str(d[4]))
 
 
-def parse_data(d):  # Parses the data so that it can be printed in a somewhat appealing manner later
+def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat appealing manner later
                     # This is extremely important for the main loops of the program
                     # (d: the data to be parsed)
     # Formatting the original values
@@ -103,7 +75,13 @@ def parse_data(d):  # Parses the data so that it can be printed in a somewhat ap
         cpu[0] = '0'
     for j in [1, 3, 4]:
         gtm[j] = re.sub(r'N\(', '', gtm[j])
-    return(d1 + '\t' + d2 + '\t' + d3 + '\t' + cpu[0] + '\t' + cpu[1] + '\t' + gtm[1] + '\t' + gtm[3] + '\t' + gtm[4])
+    rList = [d1, d2, d3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4]]
+    for k in range(3, 8):
+            rList[k] = int(rList[k]) * ureg.minute
+            if u == 'h':
+                rList[k].ito(ureg.hour)
+            rList[k] = int(rList[k].magnitude)
+    return(rList)
 
 
 def print_data(u, nz, p, v, group, notgroup):  # The final act of the program required for any data to appear
@@ -114,32 +92,32 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
         if(v):  # <-v>
             print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU User(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
             for i in group:
-                parse_values(u, nz, i.split())
+                parse_values(nz, i)
             for j in notgroup:
-                parse_values(u, nz, j.split())
+                parse_values(nz, j)
         else:
             print('Account,User/NumUsers,Allocation(%s),Used(%s)' % (u, u))
             for i in group:
-                parse_valuesShort(u, nz, i.split())
+                parse_valuesShort(nz, i)
             for j in notgroup:
-                parse_valuesShort(u, nz, j.split())
+                parse_valuesShort(nz, j)
     else:  # Default
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
             headers = ['Account', 'User/NumUsers', 'Parent', 'CPU Allocation(', 'CPU User(', 'Memory Used(', 'Node Used(', 'GPU Used(']
-            for k in range(3,8):
+            for k in range(3, 8):
                 headers[k] = headers[k] + u + ')'
             dataTable.field_names = headers
             dataTable2.field_names = headers
             for i in group:
                 try:
-                    dataTable.add_row(verbose_values(u, nz, i.split()))
+                    dataTable.add_row(verbose_values(nz, i))
                 except TypeError:
                     pass
             for j in notgroup:
                 try:
-                    dataTable2.add_row(verbose_values(u, nz, j.split()))
+                    dataTable2.add_row(verbose_values(nz, j))
                 except TypeError:
                     pass
             dataTable.align = 'r'
@@ -151,12 +129,12 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
             dataTable.field_names = headers.split()
             for i in group:
                 try:
-                    dataTable.add_row(short_values(u, nz, i.split()))
+                    dataTable.add_row(short_values(nz, i))
                 except TypeError:
                     pass
             for j in notgroup:
                 try:
-                    dataTable.add_row(short_values(u, nz, j.split()))
+                    dataTable.add_row(short_values(nz, j))
                 except TypeError:
                     pass
             dataTable.align = 'r'
@@ -246,14 +224,14 @@ for pi in userarray:
                     numusers4pi = numusers4pi + 1
     for i in garray:
         parsed = 'NumUsers=' + str(numusers4pi) + ' ' + i
-        parsed = parse_data(parsed.split())
+        parsed = parse_data(args.minute, parsed.split())
         try:  # Adding * to the group leaders
-            parsed = re.sub(r'^%s' % default_pi, '%s*' % default_pi, parsed)
+            parsed[0] = re.sub(r'^%s' % default_pi, '%s*' % default_pi, parsed[0])
         except NameError:
-            parsed = re.sub(r'^%s' % '', '%s*' % '', parsed)
+            parsed[0] = re.sub(r'^%s' % '', '%s*' % '', parsed[0])
         groupsarray.append(parsed)
     for i in ngarray:  # Adding all individuals for current pi to the larger individual list
         parseStr = 'NumUsers=' + str(numusers4pi) + ' ' + i
-        notgroupsarray.append(parse_data(parseStr.split()))
+        notgroupsarray.append(parse_data(args.minute, parseStr.split()))
 
 print_data(args.minute, args.nonzero, args.parse, args.verbose, groupsarray, notgroupsarray)
