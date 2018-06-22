@@ -10,20 +10,6 @@ from prettytable import PrettyTable
 # This makes it easier to format
 
 
-def verbose_header(u):   # This creates the header of the most informative table (created by the <-v> argument; u: the units either 'm' or 'h')
-                        # This section creates the header for the table using old formatting
-    dashList = ['-------', '-------------', '------', '-----------------', '-----------', '--------------', '------------', '----------']
-    dashString = '{:<15} {:<20} {:<6} {:>10} {:>10} {:>14} {:>10} {:>10}'.format(dashList[0], dashList[1], dashList[2], dashList[3], dashList[4], dashList[5], dashList[6], dashList[7])
-    if(u == 'h'):  # This statement occurs for the default units of hours, and prints the column titles for the table
-        titleList_h = ['Account', 'User/NumUsers', 'Parent', 'CPU Allocation(h)', 'CPU Used(h)', 'Memory Used(h)', 'Node Used(h)', 'GPU Used(h)']
-        return(titleList_h)  # Titles
-        print(dashString)    # Barrier
-    else:     # This prints the column titles with units of minutes (created by the <-m> argument)
-        titleList_m = ['Account', 'User/NumUsers', 'Parent', 'CPU Allocation(m)', 'CPU Used(m)', 'Memory Used(m)', 'Node Used(m)', 'GPU Used(m)']
-        return(titleList_m)  # Titles
-        print(dashString)     # Barrier
-
-
 def verbose_values(u, nz, d):   # This function prints the data for groups of users and each individual user
                                 # (u: the units either 'm' or 'h'; nz: a boolean that is true when skipping inactive users given by the <-n> argument; d: the data)
     if (u == 'h'):    # Default
@@ -38,16 +24,6 @@ def verbose_values(u, nz, d):   # This function prints the data for groups of us
                 return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
         else:  # Default
             return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
-
-
-def short_header(u):  # This function prints the data in a condensed form and is the default representation
-                        # (u: the units either 'm' or 'h')
-    if(u == 'h'):  # Default
-        titleList_h = ['Account', 'User/NumUsers', 'Allocation(h)', 'Used(h)']
-        return(titleList_h)  # Column titles
-    else:  # <-m>
-        titleList_m = ['Account', 'User/NumUsers', 'Allocation(m)', 'Used(m)']
-        return(titleList_m)  # Column titles
 
 
 def short_values(u, nz, d):  # This function prints the data values in a condensed manner
@@ -66,13 +42,6 @@ def short_values(u, nz, d):  # This function prints the data values in a condens
             return([d[0], d[1], d[3], d[4]])
 
 
-def parse_title(u):      # Creates the initial row for parsed output (u: units)
-    if u == 'h':   # Default
-        print('Account,User/NumUsers,Parent,CPU Allocation(h),CPU User(h),Memory Used(h),Node Used(h),GPU Used(h)')
-    else:   # <-m>
-        print('Account,User/NumUsers,Parent,CPU Allocation(m),CPU User(m),Memory Used(m),Node Used(m),GPU Used(m)')
-
-
 def parse_values(u, nz, d):   # Prints data in an easily parsible format
                                 # (created by the <-p> and <-v> arguments; u: units; nz: skipping inactive users; d: data)
     if u == 'h':   # Default
@@ -81,20 +50,14 @@ def parse_values(u, nz, d):   # Prints data in an easily parsible format
                 print(d[0] + "," + d[1] + "," + d[2] + "," + str(int(int(d[3]) / 60)) + "," + str(int(int(d[4]) / 60)) + ","
                                  + str(int(int(d[5]) / 60)) + "," + str(int(int(d[6]) / 60)) + "," + str(int(int(d[7]) / 60)))
         else:   # Default
-            print(d[0] + "," + d[1] + "," + d[2] + "," + d[3] + "," + d[4] + "," + d[5] + "," + d[6] + "," + d[7])
+            print(d[0] + "," + d[1] + "," + d[2] + "," + str(int(int(d[3]) / 60)) + "," + str(int(int(d[4]) / 60)) + ","
+                             + str(int(int(d[5]) / 60)) + "," + str(int(int(d[6]) / 60)) + "," + str(int(int(d[7]) / 60)))
     else:  # <-m>
         if (nz):  # <-n>
             if d[4] != '0':
                 print(d[0] + "," + d[1] + "," + d[2] + "," + d[3] + "," + d[4] + "," + d[5] + "," + d[6] + "," + d[7])
         else:  # Default
             print(d[0] + "," + d[1] + "," + d[2] + "," + d[3] + "," + d[4] + "," + d[5] + "," + d[6] + "," + d[7])
-
-
-def parse_titleShort(u):  # Creates the initial row for shortened parsed output (u: units)
-    if (u == 'h'):  # Default
-        print('Account,User/NumUsers,Allocation(h),Used(h)')
-    else:  # <-m>
-        print('Account,User/NumUsers,Allocation(m),Used(m)')
 
 
 def parse_valuesShort(u, nz, d):  # Prints the data in a shortend parsible format
@@ -149,13 +112,13 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
             #  group: an array containing all the groups; notgroup: an array containing individual users)
     if (p):  # <-p>
         if(v):  # <-v>
-            parse_title(u)
+            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU User(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
             for i in group:
                 parse_values(u, nz, i.split())
             for j in notgroup:
                 parse_values(u, nz, j.split())
         else:
-            parse_titleShort(u)
+            print('Account,User/NumUsers,Allocation(%s),Used(%s)' % (u, u))
             for i in group:
                 parse_valuesShort(u, nz, i.split())
             for j in notgroup:
@@ -164,22 +127,28 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
-            dataTable.field_names = verbose_header(u)
+            headers = ['Account', 'User/NumUsers', 'Parent', 'CPU Allocation(', 'CPU User(', 'Memory Used(', 'Node Used(', 'GPU Used(']
+            for k in range(3,8):
+                headers[k] = headers[k] + u + ')'
+            dataTable.field_names = headers
+            dataTable2.field_names = headers
             for i in group:
                 try:
                     dataTable.add_row(verbose_values(u, nz, i.split()))
                 except TypeError:
                     pass
-            dataTable2.field_names = verbose_header(u)
             for j in notgroup:
                 try:
                     dataTable2.add_row(verbose_values(u, nz, j.split()))
                 except TypeError:
                     pass
+            dataTable.align = 'r'
             print(dataTable)
+            dataTable2.align = 'r'
             print(dataTable2)
         else:   # Default
-            dataTable.field_names = short_header(u)
+            headers = 'Account User/NumUsers Allocation(%s) Used(%s)' % (u, u)
+            dataTable.field_names = headers.split()
             for i in group:
                 try:
                     dataTable.add_row(short_values(u, nz, i.split()))
@@ -190,6 +159,7 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
                     dataTable.add_row(short_values(u, nz, j.split()))
                 except TypeError:
                     pass
+            dataTable.align = 'r'
             print(dataTable)
 
 
