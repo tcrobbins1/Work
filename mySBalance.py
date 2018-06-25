@@ -41,10 +41,10 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
         gtm[j] = re.sub(r'N\(', '', gtm[j])
     rList = [dataString1, dataString2, dataString3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4]]
     for k in range(3, 8):  # Setting up units/formatting
-            rList[k] = int(rList[k]) * ureg.minute
-            if u == 'h':
-                rList[k].ito(ureg.hour)
-            rList[k] = str(int(rList[k].magnitude))
+        rList[k] = int(rList[k]) * ureg.minute
+        if u == 'h':
+            rList[k].ito(ureg.hour)
+        rList[k] = str(int(rList[k].magnitude))
     return(rList)
 
 
@@ -54,7 +54,7 @@ def print_data(u, p, v, group, notgroup):  # The final act of the program requir
             #  group: an array containing all the groups; notgroup: an array containing individual users)
     if (p):  # <-p>
         if(v):  # <-v>
-            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU User(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
+            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU Used(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
             for i in group:
                 pStr = ','.join(str(k) for k in i)
                 print(pStr)
@@ -71,11 +71,13 @@ def print_data(u, p, v, group, notgroup):  # The final act of the program requir
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
-            headers = ['Account', 'User/NumUsers', 'Parent', 'CPU Allocation(', 'CPU User(', 'Memory Used(', 'Node Used(', 'GPU Used(']
+            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(']
+            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(']
             for k in range(3, 8):
                 headers[k] = headers[k] + u + ')'
+                headers2[k] = headers2[k] + u + ')'
             dataTable.field_names = headers
-            dataTable2.field_names = headers
+            dataTable2.field_names = headers2
             for i in group:
                 dataTable.add_row(i)
             for j in notgroup:
@@ -124,32 +126,25 @@ except TypeError:
 userarray = []  # The list of important users that lead relevant groups
 if (args.full):  # <-f>
     for line in output1.splitlines():  # Filling the userarray with all relevant important user info
-        if 'marcc' in line:
-            if u in line.split()[2]:
-                printstr = line.split()[1] + " " + line.split()[2] + " " + line.split()[14]
-                printstr = re.sub(r'^.*Account=', '', printstr)
-                printstr = re.sub(r' UserName=', ' ', printstr)
-                printstr = re.sub(r'GrpTRESMins=cpu=', ' ', printstr)
-                printstr = re.sub(r',mem.*$', '', printstr)
-                printstr = re.sub(r'\(.*N\(', '', printstr)
-                printstr = re.sub(r'\)', '', printstr)
-                userarray.append(printstr.split()[0])
-    sproc2 = subprocess.Popen(['scontrol', 'show', 'cache'], stdout=subprocess.PIPE)
-    output2 = sproc2.communicate()[0].decode("utf-8")
-    for line in output2.splitlines():
-        if 'DefAccount' in line:
-            if u in line.split()[0]:
-                piline = line.split()[1]
-                piline = re.sub(r'DefAccount=', '', piline)
-                default_pi = piline  # Important user to get identifed with *
-else:  # Default
-    sproc2 = subprocess.Popen(['scontrol', 'show', 'cache'], stdout=subprocess.PIPE)
-    output2 = sproc2.communicate()[0].decode("utf-8")
-    for line in output2.splitlines():
-        if 'DefAccount' in line:
-            if u in line.split()[0]:
-                printstr = re.sub(r'DefAccount=', '', line.split()[1])
-                userarray.append(printstr)
+        if 'marcc' in line and u in line.split()[2]:
+            printstr = line.split()[1] + " " + line.split()[2] + " " + line.split()[14]
+            printstr = re.sub(r'^.*Account=', '', printstr)
+            printstr = re.sub(r' UserName=', ' ', printstr)
+            printstr = re.sub(r'GrpTRESMins=cpu=', ' ', printstr)
+            printstr = re.sub(r',mem.*$', '', printstr)
+            printstr = re.sub(r'\(.*N\(', '', printstr)
+            printstr = re.sub(r'\)', '', printstr)
+            userarray.append(printstr.split()[0])
+
+sproc2 = subprocess.Popen(['scontrol', 'show', 'cache'], stdout=subprocess.PIPE)
+output2 = sproc2.communicate()[0].decode("utf-8")
+for line in output2.splitlines():
+    if 'DefAccount' in line and u in line.split()[0]:
+        printstr = re.sub(r'DefAccount=', '', line.split()[1])
+        if not args.full:
+            userarray.append(printstr)
+        else:
+            default_pi = printstr
 
 if (args.all):  # <-a>
     userarray.append('')
@@ -163,20 +158,18 @@ for pi in userarray:
     for i in scontrolarray:
         testStr1 = 'Account=' + pi
         testStr2 = 'Account=' + pi + ' '
-        if (args.all):  # <-a>
-            if testStr1 in i:
-                if 'GrpTRESMins=cpu=N' not in i:  # Finding groups
-                    garray.append(i)
-                else:  # Finding users
-                    ngarray.append(i)
-                    numusers4pi = numusers4pi + 1
-        else:
-            if testStr2 in i:
-                if 'GrpTRESMins=cpu=N' not in i:  # Finding groups
-                    garray.append(i)
-                else:  # Finding users
-                    ngarray.append(i)
-                    numusers4pi = numusers4pi + 1
+        if (args.all) and testStr1 in i:  # <-a>
+            if 'GrpTRESMins=cpu=N' not in i:  # Finding groups
+                garray.append(i)
+            else:  # Finding users
+                ngarray.append(i)
+                numusers4pi = numusers4pi + 1
+        elif testStr2 in i:
+            if 'GrpTRESMins=cpu=N' not in i:  # Finding groups
+                garray.append(i)
+            else:  # Finding users
+                ngarray.append(i)
+                numusers4pi = numusers4pi + 1
     for i in garray:
         parsed = 'NumUsers=' + str(numusers4pi) + ' ' + i
         parsed = parse_data(args.minute, parsed.split())
@@ -184,17 +177,15 @@ for pi in userarray:
             parsed[0] = re.sub(r'^%s' % default_pi, '%s*' % default_pi, parsed[0])
         except NameError:
             parsed[0] = re.sub(r'^%s' % '', '%s*' % '', parsed[0])
-        if args.nonzero:
-            if parsed[4] != '0':
-                groupsarray.append(parsed)
-        else:
+        if args.nonzero and parsed[4] != '0':
+            groupsarray.append(parsed)
+        elif not args.nonzero:
             groupsarray.append(parsed)
     for i in ngarray:  # Adding all individuals for current pi to the larger individual list
         parseStr = 'NumUsers=' + str(numusers4pi) + ' ' + i
         parseStr = parse_data(args.minute, parseStr.split())
-        if args.nonzero:
-            if parseStr[4] != '0':
-                notgroupsarray.append(parseStr)
-        else:
+        if args.nonzero and parseStr[4] != '0':
+            notgroupsarray.append(parseStr)
+        elif not args.nonzero:
             notgroupsarray.append(parseStr)
 print_data(args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
