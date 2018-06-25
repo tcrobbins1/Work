@@ -1,72 +1,36 @@
 #!/bin/python
 
-import subprocess
-import getpass
-import re
-import argparse
-from prettytable import PrettyTable
-from pint import UnitRegistry
-ureg = UnitRegistry()
+import subprocess  # Needed for running scontrol
+import getpass  # Needed for getting username
+import re  # Needed for matching and subbing
+import argparse  # Needed for processing input commands
+from prettytable import PrettyTable  # Needed for formatting output
+from pint import UnitRegistry  # Needed for easy unit conversions
+ureg = UnitRegistry()  # Setting up unit conversions
 
 # All string data passed to functions represented by x or d variables are split into arrays before being passed
 # This makes it easier to format
-
-
-def verbose_values(nz, d):   # This function prints the data for groups of users and each individual user
-                                # (u: the units either 'm' or 'h'; nz: a boolean that is true when skipping inactive users given by the <-n> argument; d: the data)
-    if (nz):  # <-n>
-        if d[4] != '0':
-            return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
-    else:  # Default
-        return([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]])
-
-
-def short_values(nz, d):  # This function prints the data values in a condensed manner
-                                # (u: the units either 'm' or 'h'; nz: a boolean for skipping inactive users <-n>; d: the data)
-    if (nz):  # <-n>
-        if d[4] != 0:
-            return([d[0], d[1], d[3], d[4]])
-    else:  # Default
-        return([d[0], d[1], d[3], d[4]])
-
-
-def parse_values(nz, d):   # Prints data in an easily parsible format
-                                # (created by the <-p> and <-v> arguments; u: units; nz: skipping inactive users; d: data)
-    if (nz):  # <-n>
-        if d[4] != '0':
-            print(d[0] + "," + d[1] + "," + d[2] + "," + str(d[3]) + "," + str(d[4]) + "," + str(d[5]) + "," + str(d[6]) + "," + str(d[7]))
-    else:  # Default
-        print(d[0] + "," + d[1] + "," + d[2] + "," + str(d[3]) + "," + str(d[4]) + "," + str(d[5]) + "," + str(d[6]) + "," + str(d[7]))
-
-
-def parse_valuesShort(nz, d):  # Prints the data in a shortend parsible format
-                                # (created by the <-p> argument; u: units; nz: only active users; d: the data)
-    if (nz):  # <-n>
-        if d[4] != 0:
-            print(d[0] + ',' + d[1] + ',' + str(d[3]) + ',' + str(d[4]))
-    else:  # Default
-        print(d[0] + ',' + d[1] + ',' + str(d[3]) + ',' + str(d[4]))
 
 
 def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat appealing manner later
                     # This is extremely important for the main loops of the program
                     # (d: the data to be parsed)
     # Formatting the original values
-    d0 = re.sub('NumUsers=', '', d[0])
-    d1 = re.sub('Account=', '', d[1])
+    dataString0 = re.sub('NumUsers=', '', d[0])
+    dataString1 = re.sub('Account=', '', d[1])
     if d[2] == 'UserName=':
-        d2 = re.sub(r'^UserName=$', d0, d[2])  # This line is required for groups
+        dataString2 = re.sub(r'^UserName=$', dataString0, d[2])  # This line is required for groups
     else:
-        d2 = re.sub('UserName=', '', d[2])     # This line is for individual users
-    d2 = re.sub(r'\(.*\)', '', d2)
-    d3 = re.sub('ParentAccount=', '', d[3])
-    if d3 == '':
-        d3 = ' . '
-    d3 = re.sub(r'\(.*\)', '', d3)
-    d4 = re.sub('GrpTRESMins=', '', d[4])
+        dataString2 = re.sub('UserName=', '', d[2])     # This line is for individual users
+    dataString2 = re.sub(r'\(.*\)', '', dataString2)
+    dataString3 = re.sub('ParentAccount=', '', d[3])
+    if dataString3 == '':
+        dataString3 = ' . '
+    dataString3 = re.sub(r'\(.*\)', '', dataString3)
+    dataString4 = re.sub('GrpTRESMins=', '', d[4])
 
     # Formatting pieces of the original and getting the important bits
-    gtm = d4.split(',')
+    gtm = dataString4.split(',')
     for i in [0, 1, 3, 4]:
         gtm[i] = re.sub(r'^.*=', '', gtm[i])
         gtm[i] = re.sub(r'\)', '', gtm[i])
@@ -75,16 +39,16 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
         cpu[0] = '0'
     for j in [1, 3, 4]:
         gtm[j] = re.sub(r'N\(', '', gtm[j])
-    rList = [d1, d2, d3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4]]
-    for k in range(3, 8):
+    rList = [dataString1, dataString2, dataString3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4]]
+    for k in range(3, 8):  # Setting up units/formatting
             rList[k] = int(rList[k]) * ureg.minute
             if u == 'h':
                 rList[k].ito(ureg.hour)
-            rList[k] = int(rList[k].magnitude)
+            rList[k] = str(int(rList[k].magnitude))
     return(rList)
 
 
-def print_data(u, nz, p, v, group, notgroup):  # The final act of the program required for any data to appear
+def print_data(u, p, v, group, notgroup):  # The final act of the program required for any data to appear
             # (u: the units either 'm' or 'h'; nz: the boolean if skipping inactive users;
             #  p: the boolean if printing parsed data; v: the boolean if printing verbose data;
             #  group: an array containing all the groups; notgroup: an array containing individual users)
@@ -92,15 +56,17 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
         if(v):  # <-v>
             print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU User(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
             for i in group:
-                parse_values(nz, i)
+                pStr = ','.join(str(k) for k in i)
+                print(pStr)
             for j in notgroup:
-                parse_values(nz, j)
+                pStr2 = ','.join(str(l) for l in j)
+                print(pStr2)
         else:
             print('Account,User/NumUsers,Allocation(%s),Used(%s)' % (u, u))
             for i in group:
-                parse_valuesShort(nz, i)
+                print(i[0] + "," + i[1] + "," + i[3] + "," + i[4])
             for j in notgroup:
-                parse_valuesShort(nz, j)
+                print(j[0] + "," + j[1] + "," + j[3] + "," + j[4])
     else:  # Default
         dataTable = PrettyTable()
         if (v):  # <-v>
@@ -111,15 +77,9 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
             dataTable.field_names = headers
             dataTable2.field_names = headers
             for i in group:
-                try:
-                    dataTable.add_row(verbose_values(nz, i))
-                except TypeError:
-                    pass
+                dataTable.add_row(i)
             for j in notgroup:
-                try:
-                    dataTable2.add_row(verbose_values(nz, j))
-                except TypeError:
-                    pass
+                dataTable2.add_row(j)
             dataTable.align = 'r'
             print(dataTable)
             dataTable2.align = 'r'
@@ -128,19 +88,14 @@ def print_data(u, nz, p, v, group, notgroup):  # The final act of the program re
             headers = 'Account User/NumUsers Allocation(%s) Used(%s)' % (u, u)
             dataTable.field_names = headers.split()
             for i in group:
-                try:
-                    dataTable.add_row(short_values(nz, i))
-                except TypeError:
-                    pass
+                dataTable.add_row([i[0], i[1], i[3], i[4]])
             for j in notgroup:
-                try:
-                    dataTable.add_row(short_values(nz, j))
-                except TypeError:
-                    pass
+                dataTable.add_row([j[0], j[1], j[3], j[4]])
             dataTable.align = 'r'
             print(dataTable)
 
 
+# Setting up ArgParse
 parser = argparse.ArgumentParser(description="Print account balances.", epilog="asterisk indicates default account")
 parser.add_argument('-f', '--full', help="show multiple allocations if user has more than 1", action='store_true')
 parser.add_argument('-m', '--minute', help="for minute format (hour format by default)", action='store_const', const='m', default='h')
@@ -229,9 +184,17 @@ for pi in userarray:
             parsed[0] = re.sub(r'^%s' % default_pi, '%s*' % default_pi, parsed[0])
         except NameError:
             parsed[0] = re.sub(r'^%s' % '', '%s*' % '', parsed[0])
-        groupsarray.append(parsed)
+        if args.nonzero:
+            if parsed[4] != '0':
+                groupsarray.append(parsed)
+        else:
+            groupsarray.append(parsed)
     for i in ngarray:  # Adding all individuals for current pi to the larger individual list
         parseStr = 'NumUsers=' + str(numusers4pi) + ' ' + i
-        notgroupsarray.append(parse_data(args.minute, parseStr.split()))
-
-print_data(args.minute, args.nonzero, args.parse, args.verbose, groupsarray, notgroupsarray)
+        parseStr = parse_data(args.minute, parseStr.split())
+        if args.nonzero:
+            if parseStr[4] != '0':
+                notgroupsarray.append(parseStr)
+        else:
+            notgroupsarray.append(parseStr)
+print_data(args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
