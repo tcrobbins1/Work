@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python
 
 import subprocess  # Needed for running scontrol
 import getpass  # Needed for getting username
@@ -8,8 +8,9 @@ from prettytable import PrettyTable  # Needed for formatting output
 from pint import UnitRegistry  # Needed for easy unit conversions
 ureg = UnitRegistry()  # Setting up unit conversions
 
-# All string data passed to functions represented by x or d variables are split into arrays before being passed
-# This makes it easier to format
+# Currently opotimally runs on python/3.6-anaconda because none of the other pythons have prettytable and possibly pint
+# This is the python version of the original bash sbalance script. All the data comes from specific column formatting of 'scontrol show cache'
+# Array typically indicates a list of lists and comes from the original script's notation
 
 
 def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat appealing manner later
