@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/cm/shared/apps/anaconda3/4.4.0/bin/python
 
 import subprocess  # Needed for running scontrol
 import getpass  # Needed for getting username
