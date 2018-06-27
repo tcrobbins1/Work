@@ -29,7 +29,10 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
         dataString3 = ' . '
     dataString3 = re.sub(r'\(.*\)', '', dataString3)
     dataString4 = re.sub('GrpTRESMins=', '', d[4])
-
+    dataString5 = re.sub('GrpTRESRunMins=cpu=N', '', d[5].split()[0])
+    grp = dataString5.split(',')[0]
+    grp = re.sub(r'\(', '', grp)
+    grp = re.sub(r'\)', '', grp)
     # Formatting pieces of the original and getting the important bits
     gtm = dataString4.split(',')
     for i in [0, 1, 3, 4]:
@@ -40,8 +43,8 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
         cpu[0] = '0'
     for j in [1, 3, 4]:
         gtm[j] = re.sub(r'N\(', '', gtm[j])
-    rList = [dataString1, dataString2, dataString3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4]]
-    for k in range(3, 8):  # Setting up units/formatting
+    rList = [dataString1, dataString2, dataString3, cpu[0], cpu[1], gtm[1], gtm[3], gtm[4], grp]
+    for k in range(3, 9):  # Setting up units/formatting
         rList[k] = int(rList[k]) * ureg.minute
         if u == 'h':
             rList[k].ito(ureg.hour)
@@ -49,7 +52,7 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
     return(rList)
 
 
-def print_data(u, p, v, group, notgroup):  # The final act of the program required for any data to appear
+def print_data(s, u, p, v, group, notgroup):  # The final act of the program required for any data to appear
             # (u: the units either 'm' or 'h'; nz: the boolean if skipping inactive users;
             #  p: the boolean if printing parsed data; v: the boolean if printing verbose data;
             #  group: an array containing all the groups; notgroup: an array containing individual users)
@@ -72,9 +75,9 @@ def print_data(u, p, v, group, notgroup):  # The final act of the program requir
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
-            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(']
-            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(']
-            for k in range(3, 8):
+            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Mins(']
+            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Mins(']
+            for k in range(3, 9):
                 headers[k] = headers[k] + u + ')'
                 headers2[k] = headers2[k] + u + ')'
             dataTable.field_names = headers
@@ -105,8 +108,9 @@ parser.add_argument('-m', '--minute', help="for minute format (hour format by de
 parser.add_argument('-n', '--nonzero', help="avoid nonzero using users", action='store_true')
 parser.add_argument('-a', '--all', help="display all usage", action='store_true')
 parser.add_argument('-p', '--parse', help="parsible format", action='store_true')
-parser.add_argument('-v', '--verbose', help="verbose usage info", action='store_true')
+parser.add_argument('-v', '--verbose', help="verbose usage info; add an s as next argument to sort", action='store_true')
 parser.add_argument('-u', '--user', nargs=1, help="show values for listed user")
+parser.add_argument('-s', '--sort', help="sort verbose data by run mins", action='store_true')
 args = parser.parse_args()
 
 # Creates a list from the scontrol command that contains user data
@@ -116,7 +120,7 @@ output1 = sproc1.communicate()[0]
 output1 = output1.decode("utf-8")
 for line in output1.splitlines():
     if 'marcc' in line:
-        scontrolarray.append(line.split()[1] + " " + line.split()[2] + " " + line.split()[7] + " " + line.split()[14])
+        scontrolarray.append(line.split()[1] + " " + line.split()[2] + " " + line.split()[7] + " " + line.split()[14] + " " + line.split()[15])
 
 # Identifying a specific user
 try:
@@ -124,10 +128,11 @@ try:
 except TypeError:
     u = getpass.getuser()
 
+testStr = 'UserName=' + u + r'\(\d*\)'
 userarray = []  # The list of important users that lead relevant groups
 if (args.full):  # <-f>
     for line in output1.splitlines():  # Filling the userarray with all relevant important user info
-        if 'marcc' in line and u in line.split()[2]:
+        if 'marcc' in line and re.match(testStr, line.split()[2]):
             printstr = line.split()[1] + " " + line.split()[2] + " " + line.split()[14]
             printstr = re.sub(r'^.*Account=', '', printstr)
             printstr = re.sub(r' UserName=', ' ', printstr)
@@ -140,7 +145,7 @@ if (args.full):  # <-f>
 sproc2 = subprocess.Popen(['scontrol', 'show', 'cache'], stdout=subprocess.PIPE)
 output2 = sproc2.communicate()[0].decode("utf-8")
 for line in output2.splitlines():
-    if 'DefAccount' in line and u in line.split()[0]:
+    if 'DefAccount' in line and re.match(testStr, line.split()[0]):
         printstr = re.sub(r'DefAccount=', '', line.split()[1])
         if not args.full:
             userarray.append(printstr)
@@ -189,4 +194,4 @@ for pi in userarray:
             notgroupsarray.append(parseStr)
         elif not args.nonzero:
             notgroupsarray.append(parseStr)
-print_data(args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
+print_data(args.sort, args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
