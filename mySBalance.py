@@ -52,31 +52,51 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
     return(rList)
 
 
-def print_data(s, u, p, v, group, notgroup):  # The final act of the program required for any data to appear
+def print_data(s, t, u, p, v, group, notgroup):  # The final act of the program required for any data to appear
             # (u: the units either 'm' or 'h'; nz: the boolean if skipping inactive users;
             #  p: the boolean if printing parsed data; v: the boolean if printing verbose data;
             #  group: an array containing all the groups; notgroup: an array containing individual users)
     if (p):  # <-p>
         if(v):  # <-v>
-            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU Used(%s),Memory Used(%s),Node Used(%s),GPU Used(%s)' % (u, u, u, u, u))
-            for i in group:
-                pStr = ','.join(str(k) for k in i)
-                print(pStr)
-            for j in notgroup:
-                pStr2 = ','.join(str(l) for l in j)
-                print(pStr2)
+            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU Used(%s),Memory Used(%s),Node Used(%s),GPU Used(%s),Run Time(%s)' % (u, u, u, u, u, u))
+            if not t:
+                for i in group:
+                    pStr = ','.join(str(k) for k in i)
+                    print(pStr)
+                for j in notgroup:
+                    pStr2 = ','.join(str(l) for l in j)
+                    print(pStr2)
+            else:
+                for i in range(0, t[0]):
+                    if i < len(group):
+                        pStr = ','.join(str(k) for k in group[i])
+                        print(pStr)
+                for j in range(0, t[0]):
+                    if j < len(notgroup):
+                        pStr2 = ','.join(str(l) for l in notgroup[j])
+                        print(pStr2)
         else:
             print('Account,User/NumUsers,Allocation(%s),Used(%s)' % (u, u))
-            for i in group:
-                print(i[0] + "," + i[1] + "," + i[3] + "," + i[4])
-            for j in notgroup:
-                print(j[0] + "," + j[1] + "," + j[3] + "," + j[4])
+            if not t:
+                for i in group:
+                    print(i[0] + "," + i[1] + "," + i[3] + "," + i[4])
+                for j in notgroup:
+                    print(j[0] + "," + j[1] + "," + j[3] + "," + j[4])
+            else:
+                for i in range(0, t[0]):
+                    if i < len(group):
+                        pList = group[i]
+                        print(pList[0] + "," + pList[1] + "," + pList[3] + "," + pList[4])
+                for j in range(0, t[0]):
+                    if j < len(notgroup):
+                        pList = notgroup[j]
+                        print(pList[0] + "," + pList[1] + "," + pList[3] + "," + pList[4])
     else:  # Default
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
-            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Mins(']
-            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Mins(']
+            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Time(']
+            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Time(']
             for k in range(3, 9):
                 headers[k] = headers[k] + u + ')'
                 headers2[k] = headers2[k] + u + ')'
@@ -87,9 +107,20 @@ def print_data(s, u, p, v, group, notgroup):  # The final act of the program req
             for j in notgroup:
                 dataTable2.add_row(j)
             dataTable.align = 'r'
-            print(dataTable)
             dataTable2.align = 'r'
-            print(dataTable2)
+            if s:
+                dataTable.sortby = 'Run Time(%s)' % (u)
+                dataTable.reversesort = True
+                dataTable2.sortby = 'Run Time(%s)' % (u)
+                dataTable2.reversesort = True
+            if not t:
+                print(dataTable.get_string(title="Group Balance"))
+            else:
+                print(dataTable.get_string(title="Group Balance", start=0, end=t[0]))
+            if not t:
+                print(dataTable2.get_string(title="User Balance"))
+            else:
+                print(dataTable2.get_string(title="User Balance", start=0, end=t[0]))
         else:   # Default
             headers = 'Account User/NumUsers Allocation(%s) Used(%s)' % (u, u)
             dataTable.field_names = headers.split()
@@ -98,7 +129,10 @@ def print_data(s, u, p, v, group, notgroup):  # The final act of the program req
             for j in notgroup:
                 dataTable.add_row([j[0], j[1], j[3], j[4]])
             dataTable.align = 'r'
-            print(dataTable)
+            if not t:
+                print(dataTable.get_string(title="Group/User Balance"))
+            else:
+                print(dataTable.get_string(title="Group/User Balance", start=0, end=t[0]))
 
 
 # Setting up ArgParse
@@ -111,6 +145,7 @@ parser.add_argument('-p', '--parse', help="parsible format", action='store_true'
 parser.add_argument('-v', '--verbose', help="verbose usage info; add an s as next argument to sort", action='store_true')
 parser.add_argument('-u', '--user', nargs=1, help="show values for listed user")
 parser.add_argument('-s', '--sort', help="sort verbose data by run mins", action='store_true')
+parser.add_argument('-t', '--top', nargs=1, type=int, help="print the top number of rows")
 args = parser.parse_args()
 
 # Creates a list from the scontrol command that contains user data
@@ -194,4 +229,4 @@ for pi in userarray:
             notgroupsarray.append(parseStr)
         elif not args.nonzero:
             notgroupsarray.append(parseStr)
-print_data(args.sort, args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
+print_data(args.sort, args.top, args.minute, args.parse, args.verbose, groupsarray, notgroupsarray)
