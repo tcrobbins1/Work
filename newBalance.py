@@ -49,6 +49,10 @@ def parse_data(u, d):  # Parses the data so that it can be printed in a somewhat
         if u == 'h':
             rList[k].ito(ureg.hour)
         rList[k] = str(int(rList[k].magnitude))
+    try:
+        rList[5] = str(int(int(rList[5]) / int(rList[4])))
+    except ZeroDivisionError:
+        pass
     return(rList)
 
 
@@ -58,7 +62,7 @@ def print_data(s, t, u, p, v, group, notgroup):  # The final act of the program 
             #  group: an array containing all the groups; notgroup: an array containing individual users)
     if (p):  # <-p>
         if(v):  # <-v>
-            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU Used(%s),Memory Used(%s),Node Used(%s),GPU Used(%s),Run Time(%s)' % (u, u, u, u, u, u))
+            print('Account,User/NumUsers,Parent,CPU Allocation(%s),CPU Used(%s),Memory Usedi(MB/cpu)(%s),Node Used(%s),GPU Used(%s),Run Time(%s)' % (u, u, u, u, u, u))
             if not t:
                 for i in group:
                     pStr = ','.join(str(k) for k in i)
@@ -95,8 +99,8 @@ def print_data(s, t, u, p, v, group, notgroup):  # The final act of the program 
         dataTable = PrettyTable()
         if (v):  # <-v>
             dataTable2 = PrettyTable()
-            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Time(']
-            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(', 'Node Used(', 'GPU Used(', 'Run Time(']
+            headers = ['Account', 'NumUsers', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(MB/cpu)(', 'Node Used(', 'GPU Used(', 'Run Time(']
+            headers2 = ['Account', 'User', 'Parent', 'CPU Allocation(', 'CPU Used(', 'Memory Used(MB/cpu)(', 'Node Used(', 'GPU Used(', 'Run Time(']
             for k in range(3, 9):
                 headers[k] = headers[k] + u + ')'
                 headers2[k] = headers2[k] + u + ')'
